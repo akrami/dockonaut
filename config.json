@@ -1,0 +1,64 @@
+{
+    "project": [
+        {
+            "name": "flask-redis",
+            "repository": "https://github.com/docker/awesome-compose.git",
+            "path": "flask-redis/compose.yaml",
+            "pre-action": [
+                "date",
+                "whoami"
+            ],
+            "post-action": [
+                "date",
+                "whoami"
+            ],
+            "depends": [
+                "wordpress",
+                "todo"
+            ]
+        },
+        {
+            "name": "wordpress",
+            "local": "demo",
+            "path": "docker-compose.yml"
+        },
+        {
+            "name": "todo",
+            "repository": "https://github.com/knaopel/docker-frontend-backend-db.git",
+            "path": "docker-compose.yml",
+            "dependency": [
+                "wordpress"
+            ]
+        }
+    ],
+    "dependency": {
+        "network": [
+            {
+                "type": "network",
+                "name": "test_network",
+                "ipv6": false,
+                "ip-range": "172.28.5.0/24",
+                "subnet": "172.28.0.0/16",
+                "gateway": "172.28.5.254",
+                "driver": "bridge",
+                "internal": false
+            }
+        ],
+        "volume": [
+            {
+                "type": "volume",
+                "driver": "local",
+                "labels": [
+                    "type=ssd",
+                    "method=readonly"
+                ],
+                "name": "callForAction"
+            }
+        ],
+        "script": [
+            "date",
+            "whoami",
+            "sleep 1"
+        ]
+    }
+}
