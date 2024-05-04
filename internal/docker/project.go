@@ -65,10 +65,11 @@ func (project *Project) Start() error {
 			log.Println("output:", output)
 		}
 	}
-	_, dockerErr := DockerComposeExec("-f", getAbsoluteComposePath(*project), "up", "-d")
-	if dockerErr != nil {
-		return errors.Join(errors.New("docker compose exec error"), dockerErr)
+	scanner, cmd := DockerComposeExecLive("-f", getAbsoluteComposePath(*project), "up", "-d", "--build", "--pull", "always")
+	for scanner.Scan() {
+		log.Println(scanner.Text())
 	}
+	cmd.Wait()
 	if firstRun {
 		for _, script := range project.PostAction {
 			log.Println("running:", script)

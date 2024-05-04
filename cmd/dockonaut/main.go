@@ -1,13 +1,19 @@
 package main
 
 import (
-	"akrami/dockonaut/src/docker"
+	"akrami/dockonaut/internal/docker"
 	"errors"
 	"flag"
 	"log"
 )
 
 func main() {
+
+	// scanner, cmd := docker.CommandExecuteLive("tree")
+	// for scanner.Scan() {
+	// 	log.Println(scanner.Text())
+	// }
+	// cmd.Wait()
 
 	_, err := docker.CommandExecute("docker", "version")
 	if err != nil {
