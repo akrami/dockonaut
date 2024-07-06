@@ -50,7 +50,11 @@ func (project *Project) Start() error {
 			}
 			copyutil.CopyDir(filesys.MakeFsOnDisk(), srcDir, getAbsoluteProjectPath(*project))
 		} else {
-			_, execErr := GitExec("clone", project.Repository, getAbsoluteProjectPath(*project))
+			gitArgs := []string{"clone", project.Repository, getAbsoluteProjectPath(*project)}
+			if project.Branch != "" {
+				gitArgs = append(gitArgs, "-b", project.Branch)
+			}
+			_, execErr := GitExec(gitArgs...)
 			if execErr != nil {
 				return errors.Join(errors.New("git exec error"), execErr)
 			}

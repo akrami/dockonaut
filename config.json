@@ -29,6 +29,12 @@
             "dependency": [
                 "wordpress"
             ]
+        },
+        {
+            "name": "postgres",
+            "repository": "https://github.com/ChristianLempa/boilerplates.git",
+            "branch": "ansible-hosts-variable-removal",
+            "path": "docker-compose/postgres/docker-compose.yaml"
         }
     ],
     "dependency": {
