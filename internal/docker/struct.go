@@ -9,6 +9,7 @@ type Project struct {
 	Name       string   `json:"name"`
 	Local      string   `json:"local"`
 	Repository string   `json:"repository"`
+	Branch     string   `json:"branch"`
 	Path       string   `json:"path"`
 	PreAction  []string `json:"pre-action"`
 	PostAction []string `json:"post-action"`
