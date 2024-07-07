@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.1/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/fontawesome.min.css" integrity="sha256-E3sc886pqK23iENDqaXd3fQoD1kVP3TceC+3978NBRk=" crossorigin="anonymous">
+    <title>{{.Title}}</title>
+</head>
+<body>
+    <nav class="navbar is-black mb-5" role="navigation" aria-label="main navigation">
+        <div class="container">
+        <div class="navbar-brand">
+            <span class="icon-text navbar-item">
+                <span class="icon is-medium">
+                    <i class="fa-solid fa-dove"></i>
+                </span>
+                <span class="subtitle is-capitalized has-text-white has-text-weight-bold">{{.Title}}</span>
+              </span>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="fixed-grid has-4-cols">
+            <div class="grid">
+                <div class="cell">
+                    {{range .Projects}}
+                        <button class="button block is-block is-fullwidth {{if .Repository}}is-link{{else}}is-light{{end}}">
+                            {{.Name}}
+                        </button>
+                    {{end}}
+                </div>
+                <div class="cell is-col-span-3">
+                    <h2 class="subtitle">Another go application</h2>
+                    <p>This is a sample template for main page.</p>
+                </div>
+            </div>
+          </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/js/all.min.js" integrity="sha256-ShtKaqIDL7Iv2AJqPcHXS/s6kjSFvbypN5bRIlKTIk4=" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import (
 )
 
 type Config struct {
+	Title      string     `json:"Title"`
 	Projects   []Project  `json:"Projects"`
 	Dependency Dependency `json:"Dependency"`
 }

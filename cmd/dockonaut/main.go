@@ -3,16 +3,20 @@ package main
 import (
 	"akrami/dockonaut/internal/docker"
 	"akrami/dockonaut/internal/engine"
+	"akrami/dockonaut/internal/web"
 	"errors"
 	"flag"
 	"log"
 	"os"
 
+	"net/http"
+
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/gorilla/mux"
 )
 
 func main() {
-
 	_, err := docker.CommandExecute("docker", "version")
 	if err != nil {
 		panic(errors.New("docker is not running"))
@@ -23,6 +27,7 @@ func main() {
 	program := tea.NewProgram(engine.InitialModel())
 
 	configFile := flag.String("config", "config.json", "path to your config file")
+	daemonFlag := flag.Bool("daemon", false, "run as a web daemon")
 	flag.Parse()
 
 	config, errLoad := docker.Load(*configFile)
@@ -30,6 +35,18 @@ func main() {
 		panic(errLoad)
 	}
 
+	if *daemonFlag {
+		router := mux.NewRouter()
+		router.Use(logMiddleware)
+		router.HandleFunc("/", web.HandleHome)
+		http.Handle("/", router)
+
+		webErr := http.ListenAndServe(":9090", nil)
+		if webErr != nil {
+			panic(errors.Join(errors.New("can not start server"), webErr))
+		}
+	}
+	
 	go func() {
 		for header := range headerChannel {
 			program.Send(header)
@@ -77,4 +94,11 @@ func main() {
 		log.Fatalln("Error", err)
 		os.Exit(1)
 	}
+}
+
+func logMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		log.Println(request.RemoteAddr, request.Method, request.RequestURI)
+		next.ServeHTTP(writer, request)
+	})
 }
