@@ -6,7 +6,7 @@ RUN go build -o dist/dockonaut cmd/dockonaut/main.go
 
 FROM alpine
 
-RUN apk add --update docker docker-compose git openrc && \
+RUN apk add --update docker docker-compose git openrc openssh-client && \
   rc-update add docker boot
 
 VOLUME /var/run/docker.sock
