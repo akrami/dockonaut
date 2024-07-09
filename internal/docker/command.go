@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"io"
+	"log"
 	"os/exec"
 )
 
@@ -12,14 +13,10 @@ func DockerComposeExec(args ...string) (string, error) {
 	return CommandExecute(args...)
 }
 
-func DockerComposeExecLive(args ...string) (*bufio.Scanner, exec.Cmd) {
+func DockerComposeExecScanner(args ...string) (*bufio.Scanner, exec.Cmd) {
 	args = append([]string{"docker", "compose"}, args...)
-	return CommandExecuteLive(args...)
-}
-
-func DockerContainerExec(args ...string) (string, error) {
-	args = append([]string{"docker", "container"}, args...)
-	return CommandExecute(args...)
+	command := &Command{Args: args}
+	return command.Run()
 }
 
 func DockerNetworkExec(args ...string) (string, error) {
@@ -32,9 +29,10 @@ func DockerVolumeExec(args ...string) (string, error) {
 	return CommandExecute(args...)
 }
 
-func GitExec(args ...string) (string, error) {
+func GitExec(args ...string) (*bufio.Scanner, exec.Cmd) {
 	args = append([]string{"git"}, args...)
-	return CommandExecute(args...)
+	command := &Command{Args: args}
+	return command.Run()
 }
 
 func CommandExecute(args ...string) (string, error) {
@@ -47,22 +45,23 @@ func CommandExecute(args ...string) (string, error) {
 	if errors.Is(cmd.Err, exec.ErrDot) {
 		cmd.Err = nil
 	}
-	output, err := cmd.Output()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output[:]), errors.Join(errors.New("runtime error"), err)
 	}
 	return string(output[:]), nil
 }
 
-func CommandExecuteLive(args ...string) (*bufio.Scanner, exec.Cmd) {
+func (command *Command) Run() (*bufio.Scanner, exec.Cmd) {
 	var cmd exec.Cmd
-	if len(args) < 2 {
-		cmd = *exec.Command(args[0])
+	if len(command.Args) < 2 {
+		cmd = *exec.Command(command.Args[0])
 	} else {
-		cmd = *exec.Command(args[0], args[1:]...)
+		cmd = *exec.Command(command.Args[0], command.Args[1:]...)
 	}
-	if errors.Is(cmd.Err, exec.ErrDot) {
-		cmd.Err = nil
+
+	if command.WorkingDirectory != "" {
+		cmd.Dir = command.WorkingDirectory
 	}
 
 	stdout, _ := cmd.StdoutPipe()
@@ -72,5 +71,13 @@ func CommandExecuteLive(args ...string) (*bufio.Scanner, exec.Cmd) {
 
 	scanner := bufio.NewScanner(mergedPipe)
 	scanner.Split(bufio.ScanLines)
+
 	return scanner, cmd
+}
+
+func LogOutput(scanner bufio.Scanner, cmd exec.Cmd) {
+	for scanner.Scan() {
+		log.Println(scanner.Text())
+	}
+	cmd.Wait()
 }
