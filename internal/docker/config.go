@@ -12,6 +12,7 @@ import (
 
 func Load(configFile string) (RepoList, error) {
 	jsonFile, err := os.Open(configFile)
+	defer jsonFile.Close()
 	if err != nil {
 		return RepoList{}, errors.Join(errors.New("cannot open config file"), err)
 	}
@@ -95,7 +96,7 @@ func findProject(repos RepoList, name string) (Project, error) {
 			return project, nil
 		}
 	}
-	return Project{}, errors.New("container " + name + " not found")
+	return Project{}, errors.New("project " + name + " not found")
 }
 
 func Stop(repos RepoList) error {

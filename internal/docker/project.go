@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"sigs.k8s.io/kustomize/kyaml/copyutil"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
@@ -54,34 +55,39 @@ func (project *Project) Start() error {
 			if project.Branch != "" {
 				gitArgs = append(gitArgs, "-b", project.Branch)
 			}
-			_, execErr := GitExec(gitArgs...)
-			if execErr != nil {
-				return errors.Join(errors.New("git exec error"), execErr)
-			}
+			scanner, cmd := GitExec(gitArgs...)
+			LogOutput(*scanner, cmd)
 		}
 
 		for _, script := range project.PreAction {
-			log.Println("running:", script)
-			output, err := CommandExecute(strings.Split(script, " ")...)
-			if err != nil {
-				return errors.Join(errors.New("cannot run script: "+script), err)
+			log.Println(script)
+			command := &Command{
+				WorkingDirectory: getAbsoluteProjectPath(*project),
+				Args:             strings.Split(script, " "),
 			}
-			log.Println("output:", output)
+			scanner, cmd := command.Run()
+			LogOutput(*scanner, cmd)
 		}
 	}
-	scanner, cmd := DockerComposeExecLive("-f", getAbsoluteComposePath(*project), "up", "-d", "--build", "--pull", "always")
-	for scanner.Scan() {
-		log.Println(scanner.Text())
-	}
-	cmd.Wait()
+	scanner, cmd := DockerComposeExecScanner("-f", getAbsoluteComposePath(*project), "up", "-d", "--build", "--pull", "always")
+	LogOutput(*scanner, cmd)
 	if firstRun {
-		for _, script := range project.PostAction {
-			log.Println("running:", script)
-			output, err := CommandExecute(strings.Split(script, " ")...)
-			if err != nil {
-				return errors.Join(errors.New("cannot run script: "+script), err)
+		timeout := 30
+		for !project.IsRunning() {
+			if timeout < 0 {
+				return errors.New("timeout waiting for containers to be up")
 			}
-			log.Println("output:", output)
+			time.Sleep(time.Second)
+			timeout--
+		}
+		for _, script := range project.PostAction {
+			log.Println(script)
+			command := &Command{
+				WorkingDirectory: getAbsoluteProjectPath(*project),
+				Args:             strings.Split(script, " "),
+			}
+			scanner, cmd := command.Run()
+			LogOutput(*scanner, cmd)
 		}
 	}
 	return nil
@@ -125,6 +131,11 @@ func (project *Project) Stop(soft bool) error {
 	if soft {
 		command = "stop"
 	}
+	_, err := os.Stat(getAbsoluteComposePath(*project))
+	if err != nil {
+		return nil
+	}
+	log.Println("stopping", project.Name)
 	_, dockerErr := DockerComposeExec("-f", getAbsoluteComposePath(*project), command)
 	if dockerErr != nil {
 		return errors.Join(errors.New("docker compose "+command+" error"), dockerErr)

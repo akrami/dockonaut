@@ -1,5 +1,9 @@
 package docker
 
+import (
+	"time"
+)
+
 type RepoList struct {
 	Projects   []Project  `json:"project"`
 	Dependency Dependency `json:"dependency"`
@@ -41,14 +45,34 @@ type Volume struct {
 }
 
 type Network struct {
-	Name       string   `json:"name"`
-	Driver     string   `json:"driver"`
-	Labels     []string `json:"labels"`
-	Options    []string `json:"options"`
-	Internal   bool     `json:"internal"`
-	Attachable bool     `json:"attachable"`
-	IPV6       bool     `json:"ipv6"`
-	SubNet     string   `json:"subnet"`
-	IPRange    string   `json:"ip-range"`
-	Gateway    string   `json:"gateway"`
+	Name       string            `json:"Name"`
+	Id         string            `json:"Id"`
+	Created    time.Time         `json:"Created"`
+	Scope      string            `json:"Scope"`
+	Driver     string            `json:"Driver"`
+	EnableIPv6 bool              `json:"EnableIPv6"`
+	IPAM       IPAM              `json:"IPAM"`
+	Internal   bool              `json:"Internal"`
+	Attachable bool              `json:"Attachable"`
+	Ingress    bool              `json:"Ingress"`
+	ConfigOnly bool              `json:"ConfigOnly"`
+	Options    map[string]string `json:"Options"`
+	Labels     map[string]string `json:"Labels"`
+}
+
+type IPAM struct {
+	Driver  string            `json:"Driver"`
+	Options map[string]string `json:"Options"`
+	Config  []IPAMConfig      `json:"Config"`
+}
+
+type IPAMConfig struct {
+	Subnet  string `json:"Subnet"`
+	Gateway string `json:"Gateway"`
+	IPRange string `json:"IPRange"`
+}
+
+type Command struct {
+	WorkingDirectory string
+	Args             []string
 }
