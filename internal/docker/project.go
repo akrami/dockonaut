@@ -43,12 +43,15 @@ func (project *Project) Start() error {
 		os.MkdirAll(getAbsoluteProjectPath(*project), os.ModePerm)
 		if project.Local != "" {
 			var srcDir string
-			if !strings.HasPrefix(project.Local, "/") {
-				srcDir = "./" + project.Local
+			if strings.HasPrefix(project.Local, "/") {
+				srcDir = project.Local
+			} else {
+				root, _ := os.Getwd()
+				srcDir = root + "/" + project.Local
 			}
-			err := copyutil.CopyDir(filesys.MakeFsOnDisk(), srcDir, getRelativeProjectPath(*project))
+			err := copyutil.CopyDir(filesys.MakeFsOnDisk(), srcDir, getAbsoluteProjectPath(*project))
 			if err != nil {
-				return errors.Join(errors.New("cannot copy directory "+srcDir+" to "+getRelativeProjectPath(*project)), err)
+				return errors.Join(errors.New("cannot copy directory "+srcDir+" to "+getAbsoluteProjectPath(*project)), err)
 			}
 		} else {
 			gitArgs := []string{"clone", project.Repository, getAbsoluteProjectPath(*project)}
@@ -159,8 +162,4 @@ func getAbsoluteComposePath(project Project) string {
 func getAbsoluteProjectPath(project Project) string {
 	root, _ := os.Getwd()
 	return root + "/workspace/" + project.Name
-}
-
-func getRelativeProjectPath(project Project) string {
-	return "./workspace/" + project.Name
 }
