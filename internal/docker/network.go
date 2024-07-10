@@ -15,6 +15,9 @@ func (network *Network) Load() error {
 func (network *Network) Create() error {
 	args := []string{"create"}
 	args = append(args, "--driver", network.Driver)
+	if network.Labels == nil {
+		network.Labels = map[string]string{}
+	}
 	network.Labels["creator"] = "dockonaut"
 	for key, value := range network.Labels {
 		args = append(args, "--label", key+"="+value)

@@ -12,10 +12,10 @@ import (
 
 func Load(configFile string) (RepoList, error) {
 	jsonFile, err := os.Open(configFile)
-	defer jsonFile.Close()
 	if err != nil {
 		return RepoList{}, errors.Join(errors.New("cannot open config file"), err)
 	}
+	defer jsonFile.Close()
 	byteValue, _ := io.ReadAll(jsonFile)
 	var result RepoList
 	err = json.Unmarshal([]byte(byteValue), &result)
