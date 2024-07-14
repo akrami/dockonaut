@@ -1,10 +1,10 @@
 package docker
 
 import (
+	"akrami/dockonaut/internal/engine"
 	"bufio"
 	"errors"
 	"io"
-	"log"
 	"os/exec"
 )
 
@@ -75,9 +75,9 @@ func (command *Command) Run() (*bufio.Scanner, exec.Cmd) {
 	return scanner, cmd
 }
 
-func LogOutput(scanner bufio.Scanner, cmd exec.Cmd) {
+func LogOutput(scanner bufio.Scanner, cmd exec.Cmd, subtextChannel chan<- engine.Subtext) {
 	for scanner.Scan() {
-		log.Println(scanner.Text())
+		subtextChannel <- engine.Subtext(scanner.Text())
 	}
 	cmd.Wait()
 }

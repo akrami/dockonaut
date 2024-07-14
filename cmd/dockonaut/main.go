@@ -2,58 +2,79 @@ package main
 
 import (
 	"akrami/dockonaut/internal/docker"
+	"akrami/dockonaut/internal/engine"
 	"errors"
 	"flag"
 	"log"
+	"os"
+
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func main() {
-
-	// scanner, cmd := docker.CommandExecuteLive("tree")
-	// for scanner.Scan() {
-	// 	log.Println(scanner.Text())
-	// }
-	// cmd.Wait()
 
 	_, err := docker.CommandExecute("docker", "version")
 	if err != nil {
 		panic(errors.New("docker is not running"))
 	}
 
+	headerChannel := make(chan engine.Header)
+	subtextChannel := make(chan engine.Subtext)
+	program := tea.NewProgram(engine.InitialModel())
+
 	configFile := flag.String("config", "config.json", "path to your config file")
 	flag.Parse()
 
-	repos, errLoad := docker.Load(*configFile)
+	config, errLoad := docker.Load(*configFile)
 	if errLoad != nil {
 		panic(errLoad)
 	}
-	switch flag.Arg(0) {
-	case "start":
-		err := docker.Start(repos)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		log.Println("Started!")
 
-	case "stop":
-		errStop := docker.Stop(repos)
-		if errStop != nil {
-			log.Fatalln(errStop)
+	go func() {
+		for header := range headerChannel {
+			program.Send(header)
+		}
+	}()
+
+	go func() {
+		for subtext := range subtextChannel {
+			program.Send(subtext)
+		}
+	}()
+
+	go func() {
+		switch flag.Arg(0) {
+		case "start":
+			if err := config.Start(headerChannel, subtextChannel); err != nil {
+				log.Fatalln(err)
+			}
+
+		case "stop":
+			if err := config.Stop(headerChannel, subtextChannel); err != nil {
+				log.Fatalln(err)
+			}
+
+		case "restart":
+			if err := config.Restart(headerChannel, subtextChannel); err != nil {
+				log.Fatalln(err)
+			}
+
+		case "purge":
+			if err := config.Purge(headerChannel, subtextChannel); err != nil {
+				log.Fatalln(err)
+			}
+
+		default:
+			log.Fatalln("Please provide start/stop/restart/purge as argument")
+			os.Exit(1)
 		}
 
-	case "restart":
-		err := docker.Restart(repos)
-		if err != nil {
-			log.Fatalln(err)
-		}
+		program.Send(engine.Done(true))
+		program.Send(tea.Quit())
+	}()
 
-	case "purge":
-		err := docker.Purge(repos)
-		if err != nil {
-			log.Fatalln(err)
-		}
-
-	default:
-		log.Fatalln("please provide an start/stop/restart/purge arg")
+	if _, err := program.Run(); err != nil {
+		log.Fatalln("Error", err)
+		os.Exit(1)
 	}
 }

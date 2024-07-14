@@ -9,19 +9,8 @@ func (volume *Volume) Load() error {
 	if err != nil || !json.Valid([]byte(output)) {
 		return err
 	}
-	var jsonOutput []map[string]any
+	var jsonOutput Volume
 	json.Unmarshal([]byte(output), &jsonOutput)
-	volume.Driver= jsonOutput[0]["Driver"].(string)
-	if jsonOutput[0]["Labels"] != nil {
-		for i, v := range jsonOutput[0]["Labels"].(map[string]interface{}) {
-			volume.Labels = append(volume.Labels, i+"="+v.(string))
-		}
-	}
-	if jsonOutput[0]["Options"] != nil {
-		for i, v := range jsonOutput[0]["Options"].(map[string]interface{}) {
-			volume.Options = append(volume.Options, i+"="+v.(string))
-		}
-	}
 	return nil
 }
 
@@ -31,12 +20,12 @@ func (volume *Volume) Create() error {
 		volume.Driver = "local"
 	}
 	args = append(args, "--driver", volume.Driver)
-	volume.Labels = append(volume.Labels, "creator=dockonaut")
-	for _, label := range volume.Labels {
-		args = append(args, "--label", label)
+	volume.Labels["creator"] = "dockonaut"
+	for key, value := range volume.Labels {
+		args = append(args, "--label", key+"="+value)
 	}
-	for _, option := range volume.Options {
-		args = append(args, "--opt", option)
+	for key, value := range volume.Options {
+		args = append(args, "--opt", key+"="+value)
 	}
 	args = append(args, volume.Name)
 	_, err := DockerVolumeExec(args...)

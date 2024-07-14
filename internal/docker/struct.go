@@ -4,20 +4,20 @@ import (
 	"time"
 )
 
-type RepoList struct {
-	Projects   []Project  `json:"project"`
-	Dependency Dependency `json:"dependency"`
+type Config struct {
+	Projects   []Project  `json:"Projects"`
+	Dependency Dependency `json:"Dependency"`
 }
 
 type Project struct {
-	Name       string   `json:"name"`
-	Local      string   `json:"local"`
-	Repository string   `json:"repository"`
-	Branch     string   `json:"branch"`
-	Path       string   `json:"path"`
-	PreAction  []string `json:"pre-action"`
-	PostAction []string `json:"post-action"`
-	Depends    []string `json:"depends"`
+	Name       string   `json:"Name"`
+	Local      string   `json:"Local"`
+	Repository string   `json:"Repository"`
+	Branch     string   `json:"Branch"`
+	Path       string   `json:"Path"`
+	PreAction  []string `json:"PreAction"`
+	PostAction []string `json:"PostAction"`
+	Depends    []string `json:"Depends"`
 }
 
 type Container struct {
@@ -32,16 +32,19 @@ type Container struct {
 }
 
 type Dependency struct {
-	Network []Network `json:"network"`
-	Volume  []Volume  `json:"volume"`
-	Script  []string  `json:"script"`
+	Networks []Network `json:"Networks"`
+	Volumes  []Volume  `json:"Volumes"`
+	Scripts  []string  `json:"Scripts"`
 }
 
 type Volume struct {
-	Name    string   `json:"name"`
-	Driver  string   `json:"driver"`
-	Labels  []string `json:"labels"`
-	Options []string `json:"options"`
+	Name       string            `json:"Name"`
+	Driver     string            `json:"Driver"`
+	Labels     map[string]string `json:"Labels"`
+	Mountpoint string            `json:"Mountpoint"`
+	Options    map[string]string `json:"Options"`
+	Scope      string            `json:"Scope"`
+	CreatedAt  time.Time         `json:"CreatedAt"`
 }
 
 type Network struct {
