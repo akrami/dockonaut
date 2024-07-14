@@ -1,67 +1,71 @@
 {
-    "project": [
+    "Projects": [
         {
-            "name": "flask-redis",
-            "repository": "https://github.com/docker/awesome-compose.git",
-            "path": "flask-redis/compose.yaml",
-            "pre-action": [
+            "Name": "flask-redis",
+            "Repository": "https://github.com/docker/awesome-compose.git",
+            "Path": "flask-redis/compose.yaml",
+            "PreAction": [
                 "date",
                 "whoami"
             ],
-            "post-action": [
+            "PostAction": [
                 "date",
                 "whoami"
             ],
-            "depends": [
+            "Depends": [
                 "wordpress",
                 "todo"
             ]
         },
         {
-            "name": "wordpress",
-            "local": "demo",
-            "path": "docker-compose.yml"
+            "Name": "wordpress",
+            "Local": "demo",
+            "Path": "docker-compose.yml"
         },
         {
-            "name": "todo",
-            "repository": "https://github.com/knaopel/docker-frontend-backend-db.git",
-            "path": "docker-compose.yml",
-            "dependency": [
+            "Name": "todo",
+            "Repository": "https://github.com/knaopel/docker-frontend-backend-db.git",
+            "Path": "docker-compose.yml",
+            "Depends": [
                 "wordpress"
             ]
         },
         {
-            "name": "postgres",
-            "repository": "https://github.com/ChristianLempa/boilerplates.git",
-            "branch": "ansible-hosts-variable-removal",
-            "path": "docker-compose/postgres/docker-compose.yaml"
+            "Name": "postgres",
+            "Repository": "https://github.com/ChristianLempa/boilerplates.git",
+            "Branch": "ansible-hosts-variable-removal",
+            "Path": "docker-compose/postgres/docker-compose.yaml"
         }
     ],
-    "dependency": {
-        "network": [
+    "Dependency": {
+        "Networks": [
             {
-                "type": "network",
-                "name": "test_network",
-                "ipv6": false,
-                "ip-range": "172.28.5.0/24",
-                "subnet": "172.28.0.0/16",
-                "gateway": "172.28.5.254",
-                "driver": "bridge",
-                "internal": false
+                "Name": "test_network",
+                "EnableIPv6": false,
+                "IPAM": {
+                    "Config": [
+                        {
+                            "Subnet": "172.28.0.0/16",
+                            "Gateway": "172.28.5.254",
+                            "IPRange": "172.28.5.0/24"
+                        }
+                    ]
+                },
+                "Driver": "bridge",
+                "Internal": false
             }
         ],
-        "volume": [
+        "Volumes": [
             {
-                "type": "volume",
-                "driver": "local",
-                "labels": [
-                    "type=ssd",
-                    "method=readonly"
-                ],
-                "name": "callForAction"
+                "Driver": "local",
+                "Labels": {
+                    "type": "ssd",
+                    "method": "readonly"
+                },
+                "Name": "callForAction"
             }
         ],
-        "script": [
+        "Scripts": [
             "date",
             "whoami",
             "sleep 1"

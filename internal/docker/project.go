@@ -1,10 +1,11 @@
 package docker
 
 import (
+	"akrami/dockonaut/internal/engine"
 	"bufio"
 	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -35,7 +36,7 @@ func (project *Project) IsRunning() bool {
 	return false
 }
 
-func (project *Project) Start() error {
+func (project *Project) Start(subtextChannel chan<- engine.Subtext) error {
 	firstRun := false
 	_, err := os.Stat(getAbsoluteProjectPath(*project))
 	if err != nil {
@@ -49,31 +50,34 @@ func (project *Project) Start() error {
 				root, _ := os.Getwd()
 				srcDir = root + "/" + project.Local
 			}
+			subtextChannel <- engine.Subtext(fmt.Sprintf("copying directory %s to %s", srcDir, getAbsoluteProjectPath(*project)))
 			err := copyutil.CopyDir(filesys.MakeFsOnDisk(), srcDir, getAbsoluteProjectPath(*project))
 			if err != nil {
-				return errors.Join(errors.New("cannot copy directory "+srcDir+" to "+getAbsoluteProjectPath(*project)), err)
+				return errors.Join(fmt.Errorf("cannot copy directory %s to %s", srcDir, getAbsoluteProjectPath(*project)), err)
 			}
 		} else {
+			subtextChannel <- engine.Subtext(fmt.Sprintf("cloning %s", project.Name))
 			gitArgs := []string{"clone", project.Repository, getAbsoluteProjectPath(*project)}
 			if project.Branch != "" {
 				gitArgs = append(gitArgs, "-b", project.Branch)
 			}
 			scanner, cmd := GitExec(gitArgs...)
-			LogOutput(*scanner, cmd)
+			LogOutput(*scanner, cmd, subtextChannel)
 		}
 
 		for _, script := range project.PreAction {
-			log.Println(script)
+			subtextChannel <- engine.Subtext(fmt.Sprintf("script '%s'", script))
 			command := &Command{
 				WorkingDirectory: getAbsoluteProjectPath(*project),
 				Args:             strings.Split(script, " "),
 			}
 			scanner, cmd := command.Run()
-			LogOutput(*scanner, cmd)
+			LogOutput(*scanner, cmd, subtextChannel)
 		}
 	}
+	subtextChannel <- engine.Subtext(fmt.Sprintf("starting %s", project.Name))
 	scanner, cmd := DockerComposeExecScanner("-f", getAbsoluteComposePath(*project), "up", "-d", "--build", "--pull", "always")
-	LogOutput(*scanner, cmd)
+	LogOutput(*scanner, cmd, subtextChannel)
 	if firstRun {
 		timeout := 30
 		for !project.IsRunning() {
@@ -84,30 +88,30 @@ func (project *Project) Start() error {
 			timeout--
 		}
 		for _, script := range project.PostAction {
-			log.Println(script)
+			subtextChannel <- engine.Subtext(fmt.Sprintf("script '%s'", script))
 			command := &Command{
 				WorkingDirectory: getAbsoluteProjectPath(*project),
 				Args:             strings.Split(script, " "),
 			}
 			scanner, cmd := command.Run()
-			LogOutput(*scanner, cmd)
+			LogOutput(*scanner, cmd, subtextChannel)
 		}
 	}
 	return nil
 }
 
-func (project *Project) Restart(deep bool) error {
-	err := project.Stop(false)
+func (project *Project) Restart(deep bool, subtextCahnnel chan<- engine.Subtext) error {
+	err := project.Stop(!deep, subtextCahnnel)
 	if err != nil {
 		return errors.Join(errors.New("project stop error"), err)
 	}
 	if deep {
-		err = project.Purge()
+		err = project.Purge(subtextCahnnel)
 		if err != nil {
 			return errors.Join(errors.New("project purge error"), err)
 		}
 	}
-	err = project.Start()
+	err = project.Start(subtextCahnnel)
 	if err != nil {
 		return errors.Join(errors.New("project start error"), err)
 	}
@@ -129,7 +133,7 @@ func (project *Project) GetContainers() ([]Container, error) {
 	return containers, nil
 }
 
-func (project *Project) Stop(soft bool) error {
+func (project *Project) Stop(soft bool, subtextCahnnel chan<- engine.Subtext) error {
 	command := "down"
 	if soft {
 		command = "stop"
@@ -138,19 +142,18 @@ func (project *Project) Stop(soft bool) error {
 	if err != nil {
 		return nil
 	}
-	log.Println("stopping", project.Name)
+	subtextCahnnel <- engine.Subtext(fmt.Sprintf("stopping %s", project.Name))
 	_, dockerErr := DockerComposeExec("-f", getAbsoluteComposePath(*project), command)
 	if dockerErr != nil {
-		return errors.Join(errors.New("docker compose "+command+" error"), dockerErr)
+		subtextCahnnel <- engine.Subtext(fmt.Sprintf("error in stopping %s", project.Name))
+		return errors.Join(fmt.Errorf("docker compose %s error", command), dockerErr)
 	}
 	return nil
 }
 
-func (project *Project) Purge() error {
-	err := project.Stop(false)
-	if err != nil {
-		return errors.Join(errors.New("can not stop project"), err)
-	}
+func (project *Project) Purge(subtextCahnnel chan<- engine.Subtext) error {
+	project.Stop(false, subtextCahnnel)
+	subtextCahnnel <- engine.Subtext("cleaning workspace")
 	return os.RemoveAll(getAbsoluteProjectPath(*project))
 }
 

@@ -1,14 +1,28 @@
 package docker
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"errors"
+	"strings"
+)
 
 func (network *Network) Load() error {
+	if network.Name == "" {
+		return errors.New("network name is empty")
+	}
 	output, err := DockerNetworkExec("inspect", "--format", "json", network.Name)
 	if err != nil || !json.Valid([]byte(output)) {
-		return err
+		return errors.Join(errors.New("docker exec error"), err)
 	}
 
-	json.Unmarshal([]byte(output), &network)
+	// output is in an array
+	output = strings.TrimSpace(output)
+	output = strings.TrimPrefix(output, "[")
+	output = strings.TrimSuffix(output, "]")
+
+	if err := json.Unmarshal([]byte(output), &network); err != nil {
+		return errors.Join(errors.New(output[len(output)-10:]), err)
+	}
 	return nil
 }
 
